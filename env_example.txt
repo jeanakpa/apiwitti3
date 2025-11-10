@@ -1,0 +1,21 @@
+# Configuration de sécurité (OBLIGATOIRE)
+SECRET_KEY=your-secret-key-here
+JWT_SECRET_KEY=your-jwt-secret-key-here
+
+# Configuration de la base de données
+DATABASE_URL=postgresql://username:password@localhost:5432/database_name
+
+# Configuration CORS (optionnel)
+CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+# Configuration du support (optionnel)
+SUPPORT_PHONE=+2250710922213
+SUPPORT_WHATSAPP=+2250710922213
+SUPPORT_EMAIL=misterjohn0798@gmail.com
+WHATSAPP_DEFAULT_MESSAGE=Bonjour, j'ai besoin d'aide avec l'application.
+
+# Configuration des logs (optionnel)
+LOG_LEVEL=INFO
+
+# Configuration de l'environnement
+FLASK_ENV=development 

@@ -1,0 +1,848 @@
+-- SCHEMA: public
+
+-- DROP SCHEMA IF EXISTS public ;
+
+CREATE SCHEMA IF NOT EXISTS public
+    AUTHORIZATION postgres;
+
+COMMENT ON SCHEMA public
+    IS 'standard public schema';
+
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+GRANT ALL ON SCHEMA public TO postgres;
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_category
+
+-- DROP TABLE IF EXISTS public.mywitti_category;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_category
+(
+    id integer NOT NULL DEFAULT nextval('category_id_seq'::regclass),
+    category_name character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    slug character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default",
+    categ_points integer DEFAULT 0,
+    recompense_point integer DEFAULT 0,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    level integer NOT NULL DEFAULT 1,
+    min_jetons bigint NOT NULL DEFAULT 0,
+    nb_jours integer NOT NULL DEFAULT 90,
+    CONSTRAINT category_pkey PRIMARY KEY (id),
+    CONSTRAINT category_slug_key UNIQUE (slug)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_category
+    OWNER to postgres;
+-- Index: idx_category_level
+
+-- DROP INDEX IF EXISTS public.idx_category_level;
+
+CREATE INDEX IF NOT EXISTS idx_category_level
+    ON public.mywitti_category USING btree
+    (level ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_category_level_min_jetons
+
+-- DROP INDEX IF EXISTS public.idx_category_level_min_jetons;
+
+CREATE INDEX IF NOT EXISTS idx_category_level_min_jetons
+    ON public.mywitti_category USING btree
+    (level ASC NULLS LAST, min_jetons ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_category_min_jetons
+
+-- DROP INDEX IF EXISTS public.idx_category_min_jetons;
+
+CREATE INDEX IF NOT EXISTS idx_category_min_jetons
+    ON public.mywitti_category USING btree
+    (min_jetons ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_category_name
+
+-- DROP INDEX IF EXISTS public.idx_category_name;
+
+CREATE INDEX IF NOT EXISTS idx_category_name
+    ON public.mywitti_category USING btree
+    (category_name COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_client
+
+-- DROP TABLE IF EXISTS public.mywitti_client;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_client
+(
+    id bigint NOT NULL,
+    customer_code character varying(10) COLLATE pg_catalog."default" NOT NULL,
+    short_name character varying(50) COLLATE pg_catalog."default",
+    first_name character varying(100) COLLATE pg_catalog."default",
+    gender character varying(50) COLLATE pg_catalog."default",
+    birth_date date,
+    phone_number character varying(100) COLLATE pg_catalog."default",
+    street character varying(100) COLLATE pg_catalog."default",
+    jetons bigint,
+    date_ouverture character varying(100) COLLATE pg_catalog."default",
+    nombre_jours character varying(50) COLLATE pg_catalog."default",
+    category_id integer,
+    user_id integer,
+    working_balance bigint DEFAULT 0,
+    reliquat_transaction bigint DEFAULT 0,
+    reliquat_stabilite bigint DEFAULT 0,
+    jetons_transaction bigint DEFAULT 0,
+    jetons_stabilite bigint DEFAULT 0,
+    CONSTRAINT mywitti_client_pkey PRIMARY KEY (id),
+    CONSTRAINT mywitti_client_ukey UNIQUE (customer_code),
+    CONSTRAINT fk_client_category FOREIGN KEY (category_id)
+        REFERENCES public.mywitti_category (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT fk_client_user FOREIGN KEY (user_id)
+        REFERENCES public.mywitti_users (id) MATCH SIMPLE
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_client
+    OWNER to postgres;
+-- Index: idx_client_active
+
+-- DROP INDEX IF EXISTS public.idx_client_active;
+
+CREATE INDEX IF NOT EXISTS idx_client_active
+    ON public.mywitti_client USING btree
+    (customer_code COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default
+    WHERE jetons > 0;
+-- Index: idx_client_category_jetons
+
+-- DROP INDEX IF EXISTS public.idx_client_category_jetons;
+
+CREATE INDEX IF NOT EXISTS idx_client_category_jetons
+    ON public.mywitti_client USING btree
+    (category_id ASC NULLS LAST, jetons ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_client_customer_code
+
+-- DROP INDEX IF EXISTS public.idx_client_customer_code;
+
+CREATE INDEX IF NOT EXISTS idx_client_customer_code
+    ON public.mywitti_client USING btree
+    (customer_code COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_client_first_name
+
+-- DROP INDEX IF EXISTS public.idx_client_first_name;
+
+CREATE INDEX IF NOT EXISTS idx_client_first_name
+    ON public.mywitti_client USING btree
+    (first_name COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_client_name_search
+
+-- DROP INDEX IF EXISTS public.idx_client_name_search;
+
+CREATE INDEX IF NOT EXISTS idx_client_name_search
+    ON public.mywitti_client USING btree
+    (first_name COLLATE pg_catalog."default" ASC NULLS LAST, short_name COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_client_phone_number
+
+-- DROP INDEX IF EXISTS public.idx_client_phone_number;
+
+CREATE INDEX IF NOT EXISTS idx_client_phone_number
+    ON public.mywitti_client USING btree
+    (phone_number COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_client_user_id
+
+-- DROP INDEX IF EXISTS public.idx_client_user_id;
+
+CREATE INDEX IF NOT EXISTS idx_client_user_id
+    ON public.mywitti_client USING btree
+    (user_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_client_working_balance
+
+-- DROP INDEX IF EXISTS public.idx_client_working_balance;
+
+CREATE INDEX IF NOT EXISTS idx_client_working_balance
+    ON public.mywitti_client USING btree
+    (working_balance ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_client_jetons_daily
+
+-- DROP TABLE IF EXISTS public.mywitti_client_jetons_daily;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_client_jetons_daily
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_client_jetons_daily_id_seq'::regclass),
+    client_id bigint NOT NULL,
+    date_jour date NOT NULL,
+    solde_jetons bigint NOT NULL,
+    CONSTRAINT mywitti_client_jetons_daily_pkey PRIMARY KEY (id),
+    CONSTRAINT mywitti_client_jetons_daily_client_id_fkey FOREIGN KEY (client_id)
+        REFERENCES public.mywitti_client (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_client_jetons_daily
+    OWNER to postgres;
+-- Index: idx_daily_client_date_solde
+
+-- DROP INDEX IF EXISTS public.idx_daily_client_date_solde;
+
+CREATE INDEX IF NOT EXISTS idx_daily_client_date_solde
+    ON public.mywitti_client_jetons_daily USING btree
+    (client_id ASC NULLS LAST, date_jour ASC NULLS LAST, solde_jetons ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_daily_date_solde
+
+-- DROP INDEX IF EXISTS public.idx_daily_date_solde;
+
+CREATE INDEX IF NOT EXISTS idx_daily_date_solde
+    ON public.mywitti_client_jetons_daily USING btree
+    (date_jour ASC NULLS LAST, solde_jetons ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_client_jetons_stabilite
+
+-- DROP TABLE IF EXISTS public.mywitti_client_jetons_stabilite;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_client_jetons_stabilite
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_client_jetons_stabilite_id_seq'::regclass),
+    client_id bigint NOT NULL,
+    mois_annee character varying(7) COLLATE pg_catalog."default" NOT NULL,
+    moyenne_solde bigint NOT NULL,
+    jetons_stabilite bigint NOT NULL,
+    reliquat bigint DEFAULT 0,
+    date_calcul timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT mywitti_client_jetons_stabilite_pkey PRIMARY KEY (id),
+    CONSTRAINT mywitti_client_jetons_stabilite_client_id_mois_annee_key UNIQUE (client_id, mois_annee),
+    CONSTRAINT mywitti_client_jetons_stabilite_client_id_fkey FOREIGN KEY (client_id)
+        REFERENCES public.mywitti_client (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_client_jetons_stabilite
+    OWNER to postgres;
+-- Index: idx_jetons_stabilite_client_mois
+
+-- DROP INDEX IF EXISTS public.idx_jetons_stabilite_client_mois;
+
+CREATE INDEX IF NOT EXISTS idx_jetons_stabilite_client_mois
+    ON public.mywitti_client_jetons_stabilite USING btree
+    (client_id ASC NULLS LAST, mois_annee COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_client_palier_history
+
+-- DROP TABLE IF EXISTS public.mywitti_client_palier_history;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_client_palier_history
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_client_palier_history_id_seq'::regclass),
+    client_id bigint NOT NULL,
+    palier character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    date_debut date NOT NULL,
+    date_fin date,
+    statut character varying(20) COLLATE pg_catalog."default" NOT NULL DEFAULT 'en_cours'::character varying,
+    CONSTRAINT mywitti_client_palier_history_pkey PRIMARY KEY (id),
+    CONSTRAINT mywitti_client_palier_history_client_id_fkey FOREIGN KEY (client_id)
+        REFERENCES public.mywitti_client (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_client_palier_history
+    OWNER to postgres;
+-- Index: idx_palier_history_active
+
+-- DROP INDEX IF EXISTS public.idx_palier_history_active;
+
+CREATE INDEX IF NOT EXISTS idx_palier_history_active
+    ON public.mywitti_client_palier_history USING btree
+    (client_id ASC NULLS LAST, date_debut ASC NULLS LAST)
+    TABLESPACE pg_default
+    WHERE statut::text = 'en_cours'::text;
+-- Index: idx_palier_history_client_date
+
+-- DROP INDEX IF EXISTS public.idx_palier_history_client_date;
+
+CREATE INDEX IF NOT EXISTS idx_palier_history_client_date
+    ON public.mywitti_client_palier_history USING btree
+    (client_id ASC NULLS LAST, date_debut ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_palier_history_client_period
+
+-- DROP INDEX IF EXISTS public.idx_palier_history_client_period;
+
+CREATE INDEX IF NOT EXISTS idx_palier_history_client_period
+    ON public.mywitti_client_palier_history USING btree
+    (client_id ASC NULLS LAST, date_debut ASC NULLS LAST, date_fin ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_palier_history_date_fin
+
+-- DROP INDEX IF EXISTS public.idx_palier_history_date_fin;
+
+CREATE INDEX IF NOT EXISTS idx_palier_history_date_fin
+    ON public.mywitti_client_palier_history USING btree
+    (date_fin ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_palier_history_statut
+
+-- DROP INDEX IF EXISTS public.idx_palier_history_statut;
+
+CREATE INDEX IF NOT EXISTS idx_palier_history_statut
+    ON public.mywitti_client_palier_history USING btree
+    (statut COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_comptes
+
+-- DROP TABLE IF EXISTS public.mywitti_comptes;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_comptes
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_comptes_id_seq'::regclass),
+    customer_code character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    agence character varying(100) COLLATE pg_catalog."default",
+    numero_compte character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    libelle character varying(100) COLLATE pg_catalog."default",
+    date_ouverture_compte date NOT NULL,
+    working_balance bigint DEFAULT 0,
+    CONSTRAINT mywitti_comptes_pkey PRIMARY KEY (id),
+    CONSTRAINT mywitti_comptes_ukey UNIQUE (numero_compte),
+    CONSTRAINT fk_customer FOREIGN KEY (customer_code)
+        REFERENCES public.mywitti_client (customer_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_comptes
+    OWNER to postgres;
+-- Index: idx_comptes_agence
+
+-- DROP INDEX IF EXISTS public.idx_comptes_agence;
+
+CREATE INDEX IF NOT EXISTS idx_comptes_agence
+    ON public.mywitti_comptes USING btree
+    (agence COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_comptes_balance
+
+-- DROP INDEX IF EXISTS public.idx_comptes_balance;
+
+CREATE INDEX IF NOT EXISTS idx_comptes_balance
+    ON public.mywitti_comptes USING btree
+    (working_balance ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_comptes_customer
+
+-- DROP INDEX IF EXISTS public.idx_comptes_customer;
+
+CREATE INDEX IF NOT EXISTS idx_comptes_customer
+    ON public.mywitti_comptes USING btree
+    (customer_code COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_comptes_customer_balance
+
+-- DROP INDEX IF EXISTS public.idx_comptes_customer_balance;
+
+CREATE INDEX IF NOT EXISTS idx_comptes_customer_balance
+    ON public.mywitti_comptes USING btree
+    (customer_code COLLATE pg_catalog."default" ASC NULLS LAST, working_balance ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_comptes_numero
+
+-- DROP INDEX IF EXISTS public.idx_comptes_numero;
+
+CREATE INDEX IF NOT EXISTS idx_comptes_numero
+    ON public.mywitti_comptes USING btree
+    (numero_compte COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_comptes_positive_balance
+
+-- DROP INDEX IF EXISTS public.idx_comptes_positive_balance;
+
+CREATE INDEX IF NOT EXISTS idx_comptes_positive_balance
+    ON public.mywitti_comptes USING btree
+    (customer_code COLLATE pg_catalog."default" ASC NULLS LAST, working_balance ASC NULLS LAST)
+    TABLESPACE pg_default
+    WHERE working_balance > 0;
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_jetons_calcul_state
+
+-- DROP TABLE IF EXISTS public.mywitti_jetons_calcul_state;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_jetons_calcul_state
+(
+    customer_code character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    last_calculated date,
+    reliquat_depot bigint DEFAULT 0,
+    reliquat_retrait bigint DEFAULT 0,
+    last_stability_calculated date,
+    reliquat_stabilite bigint DEFAULT 0,
+    total_jetons_transaction bigint DEFAULT 0,
+    total_jetons_stabilite bigint DEFAULT 0,
+    CONSTRAINT mywitti_jetons_calcul_state_pkey PRIMARY KEY (customer_code)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_jetons_calcul_state
+    OWNER to postgres;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_jetons_transactions
+
+-- DROP TABLE IF EXISTS public.mywitti_jetons_transactions;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_jetons_transactions
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_jetons_transactions_id_seq'::regclass),
+    client_id bigint NOT NULL,
+    lot_id integer,
+    montant integer NOT NULL,
+    motif text COLLATE pg_catalog."default",
+    date_transaction timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    type_transaction character varying(30) COLLATE pg_catalog."default" DEFAULT 'operation'::character varying,
+    reliquat bigint DEFAULT 0,
+    CONSTRAINT mywitti_jetons_transactions_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_transaction_client FOREIGN KEY (client_id)
+        REFERENCES public.mywitti_client (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT fk_transaction_lot FOREIGN KEY (lot_id)
+        REFERENCES public.mywitti_lots (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE SET NULL
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_jetons_transactions
+    OWNER to postgres;
+-- Index: idx_jetons_transactions_type
+
+-- DROP INDEX IF EXISTS public.idx_jetons_transactions_type;
+
+CREATE INDEX IF NOT EXISTS idx_jetons_transactions_type
+    ON public.mywitti_jetons_transactions USING btree
+    (type_transaction COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_transactions_client_date_montant
+
+-- DROP INDEX IF EXISTS public.idx_transactions_client_date_montant;
+
+CREATE INDEX IF NOT EXISTS idx_transactions_client_date_montant
+    ON public.mywitti_jetons_transactions USING btree
+    (client_id ASC NULLS LAST, date_transaction ASC NULLS LAST, montant ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_transactions_date_montant
+
+-- DROP INDEX IF EXISTS public.idx_transactions_date_montant;
+
+CREATE INDEX IF NOT EXISTS idx_transactions_date_montant
+    ON public.mywitti_jetons_transactions USING btree
+    (date_transaction ASC NULLS LAST, montant ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_transactions_lot
+
+-- DROP INDEX IF EXISTS public.idx_transactions_lot;
+
+CREATE INDEX IF NOT EXISTS idx_transactions_lot
+    ON public.mywitti_jetons_transactions USING btree
+    (lot_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_transactions_montant
+
+-- DROP INDEX IF EXISTS public.idx_transactions_montant;
+
+CREATE INDEX IF NOT EXISTS idx_transactions_montant
+    ON public.mywitti_jetons_transactions USING btree
+    (montant ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_lots
+
+-- DROP TABLE IF EXISTS public.mywitti_lots;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_lots
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_lots_id_seq'::regclass),
+    libelle character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    slug character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    recompense_image text COLLATE pg_catalog."default",
+    jetons integer DEFAULT 0,
+    stock integer DEFAULT 0,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    category_id integer,
+    CONSTRAINT mywitti_lots_pkey PRIMARY KEY (id),
+    CONSTRAINT mywitti_lots_slug_key UNIQUE (slug),
+    CONSTRAINT fk_lot_category FOREIGN KEY (category_id)
+        REFERENCES public.mywitti_category (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE SET NULL
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_lots
+    OWNER to postgres;
+-- Index: idx_lots_available
+
+-- DROP INDEX IF EXISTS public.idx_lots_available;
+
+CREATE INDEX IF NOT EXISTS idx_lots_available
+    ON public.mywitti_lots USING btree
+    (category_id ASC NULLS LAST, jetons ASC NULLS LAST)
+    TABLESPACE pg_default
+    WHERE stock > 0;
+-- Index: idx_lots_category
+
+-- DROP INDEX IF EXISTS public.idx_lots_category;
+
+CREATE INDEX IF NOT EXISTS idx_lots_category
+    ON public.mywitti_lots USING btree
+    (category_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_lots_category_jetons
+
+-- DROP INDEX IF EXISTS public.idx_lots_category_jetons;
+
+CREATE INDEX IF NOT EXISTS idx_lots_category_jetons
+    ON public.mywitti_lots USING btree
+    (category_id ASC NULLS LAST, jetons ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_lots_jetons
+
+-- DROP INDEX IF EXISTS public.idx_lots_jetons;
+
+CREATE INDEX IF NOT EXISTS idx_lots_jetons
+    ON public.mywitti_lots USING btree
+    (jetons ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_lots_libelle
+
+-- DROP INDEX IF EXISTS public.idx_lots_libelle;
+
+CREATE INDEX IF NOT EXISTS idx_lots_libelle
+    ON public.mywitti_lots USING btree
+    (libelle COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_lots_stock
+
+-- DROP INDEX IF EXISTS public.idx_lots_stock;
+
+CREATE INDEX IF NOT EXISTS idx_lots_stock
+    ON public.mywitti_lots USING btree
+    (stock ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_lots_claims
+
+-- DROP TABLE IF EXISTS public.mywitti_lots_claims;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_lots_claims
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_lots_claims_id_seq'::regclass),
+    client_id bigint NOT NULL,
+    lot_id integer NOT NULL,
+    date_reclamation timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    statut character varying(50) COLLATE pg_catalog."default" DEFAULT 'en_attente'::character varying,
+    CONSTRAINT mywitti_lots_claims_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_claim_client FOREIGN KEY (client_id)
+        REFERENCES public.mywitti_client (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT fk_claim_lot FOREIGN KEY (lot_id)
+        REFERENCES public.mywitti_lots (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_lots_claims
+    OWNER to postgres;
+-- Index: idx_claims_client_lot
+
+-- DROP INDEX IF EXISTS public.idx_claims_client_lot;
+
+CREATE INDEX IF NOT EXISTS idx_claims_client_lot
+    ON public.mywitti_lots_claims USING btree
+    (client_id ASC NULLS LAST, lot_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_claims_client_statut
+
+-- DROP INDEX IF EXISTS public.idx_claims_client_statut;
+
+CREATE INDEX IF NOT EXISTS idx_claims_client_statut
+    ON public.mywitti_lots_claims USING btree
+    (client_id ASC NULLS LAST, statut COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_claims_date
+
+-- DROP INDEX IF EXISTS public.idx_claims_date;
+
+CREATE INDEX IF NOT EXISTS idx_claims_date
+    ON public.mywitti_lots_claims USING btree
+    (date_reclamation ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_claims_pending
+
+-- DROP INDEX IF EXISTS public.idx_claims_pending;
+
+CREATE INDEX IF NOT EXISTS idx_claims_pending
+    ON public.mywitti_lots_claims USING btree
+    (client_id ASC NULLS LAST, date_reclamation ASC NULLS LAST)
+    TABLESPACE pg_default
+    WHERE statut::text = 'en_attente'::text;
+-- Index: idx_claims_statut
+
+-- DROP INDEX IF EXISTS public.idx_claims_statut;
+
+CREATE INDEX IF NOT EXISTS idx_claims_statut
+    ON public.mywitti_lots_claims USING btree
+    (statut COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_lots_favoris
+
+-- DROP TABLE IF EXISTS public.mywitti_lots_favoris;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_lots_favoris
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_lots_favoris_id_seq'::regclass),
+    client_id bigint NOT NULL,
+    lot_id integer NOT NULL,
+    date_ajout timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT mywitti_lots_favoris_pkey PRIMARY KEY (id),
+    CONSTRAINT unique_client_lot_favoris UNIQUE (client_id, lot_id),
+    CONSTRAINT fk_favoris_client FOREIGN KEY (client_id)
+        REFERENCES public.mywitti_client (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT fk_favoris_lot FOREIGN KEY (lot_id)
+        REFERENCES public.mywitti_lots (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_lots_favoris
+    OWNER to postgres;
+-- Index: idx_favoris_client_lot
+
+-- DROP INDEX IF EXISTS public.idx_favoris_client_lot;
+
+CREATE INDEX IF NOT EXISTS idx_favoris_client_lot
+    ON public.mywitti_lots_favoris USING btree
+    (client_id ASC NULLS LAST, lot_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_favoris_client_lot_date
+
+-- DROP INDEX IF EXISTS public.idx_favoris_client_lot_date;
+
+CREATE INDEX IF NOT EXISTS idx_favoris_client_lot_date
+    ON public.mywitti_lots_favoris USING btree
+    (client_id ASC NULLS LAST, lot_id ASC NULLS LAST, date_ajout ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_mouvement
+
+-- DROP TABLE IF EXISTS public.mywitti_mouvement;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_mouvement
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_mouvement_id_seq'::regclass),
+    customer_code character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    account_number character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    booking_date date NOT NULL,
+    reference character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    debit bigint,
+    credit bigint,
+    CONSTRAINT mywitti_mouvement_pkey PRIMARY KEY (id),
+    CONSTRAINT mywitti_mouvement_reference_key UNIQUE (reference)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_mouvement
+    OWNER to postgres;
+-- Index: idx_mouvement_account_number
+
+-- DROP INDEX IF EXISTS public.idx_mouvement_account_number;
+
+CREATE INDEX IF NOT EXISTS idx_mouvement_account_number
+    ON public.mywitti_mouvement USING btree
+    (account_number COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_mouvement_booking_date
+
+-- DROP INDEX IF EXISTS public.idx_mouvement_booking_date;
+
+CREATE INDEX IF NOT EXISTS idx_mouvement_booking_date
+    ON public.mywitti_mouvement USING btree
+    (booking_date ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_mouvement_customer_code
+
+-- DROP INDEX IF EXISTS public.idx_mouvement_customer_code;
+
+CREATE INDEX IF NOT EXISTS idx_mouvement_customer_code
+    ON public.mywitti_mouvement USING btree
+    (customer_code COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_user_type
+
+-- DROP TABLE IF EXISTS public.mywitti_user_type;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_user_type
+(
+    id integer NOT NULL DEFAULT nextval('mywitti_user_type_id_seq'::regclass),
+    type_name character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default",
+    permissions jsonb DEFAULT '{}'::jsonb,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT mywitti_user_type_pkey PRIMARY KEY (id),
+    CONSTRAINT mywitti_user_type_type_name_key UNIQUE (type_name)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_user_type
+    OWNER to postgres;
+
+-- Trigger: update_mywitti_user_type_updated_at
+
+-- DROP TRIGGER IF EXISTS update_mywitti_user_type_updated_at ON public.mywitti_user_type;
+
+CREATE TRIGGER update_mywitti_user_type_updated_at
+    BEFORE UPDATE 
+    ON public.mywitti_user_type
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-- Table: public.mywitti_users
+
+-- DROP TABLE IF EXISTS public.mywitti_users;
+
+CREATE TABLE IF NOT EXISTS public.mywitti_users
+(
+    id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
+    user_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    password text COLLATE pg_catalog."default" NOT NULL,
+    first_name character varying(100) COLLATE pg_catalog."default",
+    last_name character varying(100) COLLATE pg_catalog."default",
+    user_type character varying(20) COLLATE pg_catalog."default" DEFAULT 'client'::character varying,
+    date_joined timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    last_login timestamp without time zone,
+    is_active boolean DEFAULT true,
+    is_staff boolean DEFAULT false,
+    must_change_password boolean DEFAULT true,
+    user_type_id integer,
+    email character varying(255) COLLATE pg_catalog."default",
+    CONSTRAINT users_pkey PRIMARY KEY (id),
+    CONSTRAINT users_user_id_key UNIQUE (user_id),
+    CONSTRAINT mywitti_users_user_type_id_fkey FOREIGN KEY (user_type_id)
+        REFERENCES public.mywitti_user_type (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT users_user_type_check CHECK (user_type::text = ANY (ARRAY['client'::character varying, 'admin'::character varying, 'superadmin'::character varying]::text[]))
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.mywitti_users
+    OWNER to postgres;
+-- Index: idx_mywitti_users_user_type_id
+
+-- DROP INDEX IF EXISTS public.idx_mywitti_users_user_type_id;
+
+CREATE INDEX IF NOT EXISTS idx_mywitti_users_user_type_id
+    ON public.mywitti_users USING btree
+    (user_type_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_users_active
+
+-- DROP INDEX IF EXISTS public.idx_users_active;
+
+CREATE INDEX IF NOT EXISTS idx_users_active
+    ON public.mywitti_users USING btree
+    (user_id COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default
+    WHERE is_active = true;
+-- Index: idx_users_date_joined
+
+-- DROP INDEX IF EXISTS public.idx_users_date_joined;
+
+CREATE INDEX IF NOT EXISTS idx_users_date_joined
+    ON public.mywitti_users USING btree
+    (date_joined ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_users_last_login
+
+-- DROP INDEX IF EXISTS public.idx_users_last_login;
+
+CREATE INDEX IF NOT EXISTS idx_users_last_login
+    ON public.mywitti_users USING btree
+    (last_login ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_users_type_active
+
+-- DROP INDEX IF EXISTS public.idx_users_type_active;
+
+CREATE INDEX IF NOT EXISTS idx_users_type_active
+    ON public.mywitti_users USING btree
+    (user_type COLLATE pg_catalog."default" ASC NULLS LAST, is_active ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: idx_users_user_type
+
+-- DROP INDEX IF EXISTS public.idx_users_user_type;
+
+CREATE INDEX IF NOT EXISTS idx_users_user_type
+    ON public.mywitti_users USING btree
+    (user_type COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
