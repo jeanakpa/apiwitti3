@@ -1,0 +1,242 @@
+# Documentation API Administrateur (Witti)
+
+Toutes les routes nécessitent un JWT valide (header Authorization: Bearer <token>), sauf /admin/login.
+
+---
+
+0. AUTHENTIFICATION ADMIN (LOGIN)
+---------------------------------
+POST /admin/login
+- Permet à un administrateur ou superadmin de se connecter et d'obtenir un JWT.
+- Body :
+  {
+    "email": "admin@witti.com",
+    "password": "motdepasse"
+  }
+- Réponse (succès) :
+  {
+    "access_token": "<JWT>",
+    "role": "admin" | "super_admin",
+    "name": "Jean Dupont",
+    "email": "admin@witti.com"
+  }
+- Réponse (erreur credentials) :
+  {
+    "message": "Invalid email or password"
+  }
+- Réponse (erreur non admin) :
+  {
+    "message": "User is not an admin"
+  }
+- Réponse (erreur serveur) :
+  {
+    "error": "..."
+  }
+- Détails :
+  - Le token JWT doit être utilisé dans le header Authorization: Bearer <token> pour toutes les routes suivantes.
+  - Seuls les utilisateurs avec is_admin=True ou is_superuser=True peuvent se connecter ici.
+  - Le champ "role" permet de distinguer les superadmins ("super_admin") des admins classiques ("admin").
+  - Le nom complet et l'email sont renvoyés pour affichage dans le dashboard.
+
+---
+
+1. GESTION DES ADMINISTRATEURS
+------------------------------
+GET /admin
+- Liste tous les administrateurs (admin et superadmin).
+- Réponse :
+  [
+    {
+      "id": 1,
+      "first_name": "Jean",
+      "last_name": "Dupont",
+      "email": "jean@witti.com",
+      "user_id": "admin1",
+      "is_admin": true,
+      "is_superuser": false,
+      "is_active": true,
+      "created_at": "2024-07-01 12:00:00"
+    }
+  ]
+
+POST /admin
+- Crée un nouvel administrateur (superadmin uniquement).
+- Body :
+  {
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "email": "jean@witti.com",
+    "user_id": "admin1",
+    "password": "motdepasse",
+    "is_admin": true,
+    "is_superuser": false
+  }
+- Réponse :
+  {
+    "msg": "Administrateur créé avec succès",
+    "admin_id": 2
+  }
+
+PUT /admin
+- Modifie un administrateur (superadmin uniquement).
+- Body : Identique à POST, mais inclure "id": <admin_id>.
+
+DELETE /admin/<admin_id>
+- Supprime un administrateur (superadmin uniquement).
+
+---
+
+2. GESTION DES CLIENTS
+----------------------
+GET /customers
+- Liste tous les clients.
+- Réponse :
+  [
+    {
+      "id": 1,
+      "customer_code": "CUST001",
+      "short_name": "JDupont",
+      "first_name": "Jean",
+      "gender": "M",
+      "birth_date": "1990-01-01",
+      "phone_number": "0123456789",
+      "street": "123 rue de Paris",
+      "total": 1000,
+      "jetons": 500
+    }
+  ]
+
+POST /customers
+- Crée un client.
+- Body :
+  {
+    "customer_code": "CUST001",
+    "short_name": "JDupont",
+    "first_name": "Jean",
+    "gender": "M",
+    "birth_date": "1990-01-01",
+    "phone_number": "0123456789",
+    "street": "123 rue de Paris"
+  }
+- Réponse :
+  {
+    "msg": "Client créé avec succès",
+    "customer_id": 1
+  }
+
+PUT /customers
+- Modifie un client (inclure "id": <customer_id> dans le body).
+
+DELETE /customers/<customer_id>
+- Supprime un client.
+
+---
+
+3. GESTION DES COMMANDES
+------------------------
+GET /orders
+- Liste toutes les commandes (lots réclamés).
+- Réponse :
+  {
+    "msg": "Commandes récupérées avec succès",
+    "orders": [
+      {
+        "id": "1",
+        "user_id": 1,
+        "customer_id": 1,
+        "amount": 100,
+        "status": "pending",
+        "contact": "N/A",
+        "date": "2024-07-01 12:00:00",
+        "items": [
+          {
+            "reward_id": 1,
+            "libelle": "Cadeau",
+            "quantity": 1,
+            "jeton": 100
+          }
+        ]
+      }
+    ]
+  }
+
+GET /orders/<order_id>
+- Détail d'une commande.
+
+PUT /orders/<order_id>
+- Valide une commande (superadmin uniquement).
+
+PUT /orders/<order_id>/cancel
+- Annule une commande.
+
+---
+
+4. GESTION DU STOCK (lots/récompenses)
+--------------------------------------
+GET /stock
+- Liste tous les lots/récompenses disponibles.
+
+POST /stock
+- Ajoute un lot (superadmin uniquement).
+- Body :
+  {
+    "libelle": "Cadeau",
+    "jetons": 100,
+    "stock": 10,
+    "category_id": 1
+  }
+
+PUT /stock/<stock_id>
+- Modifie un lot.
+
+DELETE /stock/<stock_id>
+- Supprime un lot.
+
+---
+
+5. NOTIFICATIONS ADMINISTRATEUR
+------------------------------
+GET /notifications
+- Liste les notifications de l'admin connecté.
+
+DELETE /notifications/<notification_id>
+- Supprime une notification.
+
+PATCH /notifications/<notification_id>
+- Marque une notification comme lue.
+
+---
+
+6. STATISTIQUES
+---------------
+GET /stats
+- Statistiques générales (utilisateurs, lots, commandes, etc.).
+
+---
+
+7. FAQ, SUPPORT, PARRAINAGE, ETC.
+----------------------------------
+- Endpoints similaires existent pour la gestion des FAQ, du support, des parrainages, des profils, etc.
+- Structure : généralement CRUD (GET, POST, PUT, DELETE) avec authentification admin/superadmin.
+
+---
+
+SÉCURITÉ
+--------
+- JWT obligatoire pour toutes les routes (sauf /admin/login).
+- Certaines routes sont réservées aux superadmins (is_superuser).
+- Les statuts d'erreur sont toujours renvoyés en JSON avec un code HTTP explicite (401, 403, 400, 500, etc.).
+
+---
+
+INTÉGRATION FRONT
+-----------------
+- Utilise les endpoints ci-dessus avec le header Authorization: Bearer <token>.
+- Les modèles de données sont décrits dans les exemples de body/réponse ci-dessus.
+- Pour plus de détails sur chaque champ, se référer aux modèles dans le code (Admin/resources/*.py).
+- Pour le login, stocke le JWT dans le localStorage ou le cookie sécurisé côté front.
+- Pour chaque appel, vérifie le code HTTP et le message pour afficher les erreurs à l'utilisateur.
+
+---
+
+Si tu veux une version OpenAPI/Swagger ou une documentation Postman, demande-le ! 
